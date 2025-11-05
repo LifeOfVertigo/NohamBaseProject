@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON Basic Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        p {
+            font-size: 1.2em;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #4ade80;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NEON Plugin Test</h1>
+        <p>HTML rendering is working!</p>
+        <p>UE5 + NEON integration successful</p>
+
+        <div class="status">
+            <span class="success">✓ Status: Active</span>
+        </div>
+
+        <button id="testButton" onclick="testUE5Communication()">
+            Test UE5 Communication
+        </button>
+
+        <p id="messageDisplay" style="margin-top: 20px; font-style: italic;"></p>
+    </div>
+
+    <script>
+        // Test function for UE5 communication
+        function testUE5Communication() {
+            const messageDisplay = document.getElementById('messageDisplay');
+
+            // Check if NEON bridge is available
+            if (typeof ue !== 'undefined' && ue.interface) {
+                messageDisplay.textContent = '✓ NEON bridge detected! Sending test message...';
+
+                // Attempt to call UE5 function
+                try {
+                    ue.interface.test_message('Hello from JavaScript!');
+                    messageDisplay.textContent = '✓ Message sent to UE5 successfully!';
+                } catch (error) {
+                    messageDisplay.textContent = '⚠ Bridge exists but function not bound: ' + error.message;
+                }
+            } else {
+                messageDisplay.textContent = '⚠ NEON bridge (ue.interface) not found. Running in browser mode.';
+            }
+
+            console.log('Test button clicked at:', new Date().toISOString());
+        }
+
+        // Log when page loads
+        console.log('NEON test page loaded successfully');
+        document.getElementById('messageDisplay').textContent = 'Ready for testing...';
+    </script>
+</body>
+</html>

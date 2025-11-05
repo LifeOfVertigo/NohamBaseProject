@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON Test - Simple</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e1b4b 0%, #581c87 50%, #1e1b4b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .container {
+            background: rgba(30, 27, 75, 0.8);
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            color: white;
+            font-size: 48px;
+            margin: 0 0 24px 0;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+        }
+        button {
+            background: rgba(168, 85, 247, 1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 16px 32px;
+            margin: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: rgba(147, 51, 234, 1);
+            transform: scale(1.05);
+        }
+        .status {
+            color: #a78bfa;
+            font-size: 14px;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NEON Test Success!</h1>
+        <p class="status">If you can see this styled, NEON is working!</p>
+        <button onclick="testUE5()">Test UE5 Connection</button>
+        <button onclick="testConsole()">Test Console</button>
+    </div>
+
+    <script>
+        function testUE5() {
+            if (window.ue && window.ue.interface) {
+                console.log('[Test] UE5 interface available!');
+                alert('UE5 interface is available!');
+            } else {
+                console.log('[Test] UE5 interface NOT available');
+                alert('UE5 interface NOT available (this is normal in browser)');
+            }
+        }
+
+        function testConsole() {
+            console.log('[Test] Console logging works!');
+            console.log('[Test] Window location:', window.location.href);
+            alert('Check DevTools console for messages');
+        }
+
+        // Auto-log on load
+        console.log('[Test Page] Simple HTML loaded successfully');
+        console.log('[Test Page] CSS styling should be visible');
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(del:*)",
+      "Bash(rm:*)",
+      "Bash(\"C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Binaries\\DotNET\\UnrealBuildTool\\UnrealBuildTool.exe\" -projectfiles -project=\"Noham_Base_Proj_Cpp.uproject\" -game -rocket -progress)",
+      "Bash(mkdir:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(\"C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Binaries\\DotNET\\UnrealBuildTool\\UnrealBuildTool.exe\" -projectfiles -project=\"Noham_Base_Proj_Cpp/Noham_Base_Proj_Cpp.uproject\" -game -rocket -progress)",
+      "Bash(mv:*)",
+      "Bash(\"C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Binaries\\DotNET\\UnrealBuildTool\\UnrealBuildTool.exe\" -projectfiles -project=\"C:\\Users\\tyler\\OneDrive\\Documentos\\Unreal Projects\\NohamBaseProject\\Noham_Base_Proj_Cpp\\Noham_Base_Proj_Cpp.uproject\" -game -rocket -progress)",
+      "mcp__shadcn__get_project_registries",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__shadcn__get_add_command_for_items",
+      "Read(//c/Program Files/Epic Games/UE_5.5/Engine/Plugins/**)",
+      "Bash(npm run build:*)",
+      "Bash(npm run build:ue:*)",
+      "Bash(\"C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Build\\BatchFiles\\Build.bat\" Noham_Base_Proj_CppEditor Win64 Development \"C:\\Users\\tyler\\OneDrive\\Documentos\\Unreal Projects\\NohamBaseProject\\Noham_Base_Proj_Cpp\\Noham_Base_Proj_Cpp.uproject\" -WaitMutex)"
+    ],
+    "deny": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "shadcn"
+  ]
+}
