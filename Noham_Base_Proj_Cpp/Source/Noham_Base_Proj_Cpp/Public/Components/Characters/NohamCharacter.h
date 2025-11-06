@@ -168,9 +168,9 @@ protected:
 	float CameraInterpolationSpeed = 10.0f;
 
 	// Look input smoothing
-	/** Enable input smoothing for mouse look */
+	/** Enable input smoothing for mouse look - DISABLED for responsive survival game feel */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	bool bEnableLookSmoothing = true;
+	bool bEnableLookSmoothing = false;
 
 	/** Look input smoothing speed */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input", meta = (ClampMin = "1.0", ClampMax = "30.0"))

@@ -74,8 +74,7 @@ void ANohamCharacter::BeginPlay()
 		DesiredCameraLocation = CurrentCameraLocation;
 	}
 
-	// Initialize input smoothing
-	CurrentLookInput = FVector2D::ZeroVector;
+	// Initialize input smoothing state (disabled by default)
 	SmoothedLookInput = FVector2D::ZeroVector;
 
 	// Initialize FOV
@@ -213,9 +212,6 @@ void ANohamCharacter::Look(const FInputActionValue& Value)
 			SensitivityY *= ADSMultiplier;
 		}
 
-		// Store current input for smoothing
-		CurrentLookInput = LookAxisVector;
-
 		// Apply sensitivity scaling
 		// Note: Y-axis is inverted by default for standard FPS controls (moving mouse up looks down)
 		// The bInvertY setting reverses this behavior if the user wants "flight sim" style controls
@@ -225,6 +221,8 @@ void ANohamCharacter::Look(const FInputActionValue& Value)
 		);
 
 		// Apply smoothing if enabled
+		// NOTE: Smoothing is disabled by default for responsive survival game feel
+		// For gamepad smoothing, use Enhanced Input's response curves instead
 		if (bEnableLookSmoothing)
 		{
 			float DeltaTime = GetWorld()->GetDeltaSeconds();

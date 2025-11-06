@@ -399,75 +399,96 @@ void UNEONWidget::InvokeWebString(const FString &Method, const FString &Value)
 
 FReply UNEONWidget::NativeOnMouseButtonDown(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
 {
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonDown - Button: %s"), *MouseEvent.GetEffectingButton().ToString());
   HandleMouseButtonEvent(MyGeometry, MouseEvent, false);
-  return Super::NativeOnMouseButtonDown(MyGeometry, MouseEvent);
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonDown Reply - IsHandled: TRUE (forced)"));
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnMouseButtonUp(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
 {
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonUp - Button: %s"), *MouseEvent.GetEffectingButton().ToString());
   HandleMouseButtonEvent(MyGeometry, MouseEvent, true);
-  return Super::NativeOnMouseButtonUp(MyGeometry, MouseEvent);
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonUp Reply - IsHandled: TRUE (forced)"));
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnMouseButtonDoubleClick(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
 {
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonDoubleClick - Button: %s"), *MouseEvent.GetEffectingButton().ToString());
   HandleMouseButtonEvent(MyGeometry, MouseEvent, false);
-  return Super::NativeOnMouseButtonDown(MyGeometry, MouseEvent);
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] NativeOnMouseButtonDoubleClick Reply - IsHandled: TRUE (forced)"));
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnMouseMove(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
 {
   HandleMouseMoveEvent(MyGeometry, MouseEvent);
-  return Super::NativeOnMouseMove(MyGeometry, MouseEvent);
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnMouseWheel(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
 {
   HandleMouseWheelEvent(MyGeometry, MouseEvent);
-  return Super::NativeOnMouseWheel(MyGeometry, MouseEvent);
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnKeyDown(const FGeometry &MyGeometry, const FKeyEvent &InKeyEvent)
 {
   HandleKeyEvent(InKeyEvent, false);
-  return Super::NativeOnKeyDown(MyGeometry, InKeyEvent);
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnKeyUp(const FGeometry &MyGeometry, const FKeyEvent &InKeyEvent)
 {
   HandleKeyEvent(InKeyEvent, true);
-  return Super::NativeOnKeyUp(MyGeometry, InKeyEvent);
+  return FReply::Handled();
 }
 
 FReply UNEONWidget::NativeOnKeyChar(const FGeometry &MyGeometry, const FCharacterEvent &InCharacterEvent)
 {
   HandleCharacterEvent(InCharacterEvent);
-  return Super::NativeOnKeyChar(MyGeometry, InCharacterEvent);
+  return FReply::Handled();
 }
 
 void UNEONWidget::HandleMouseButtonEvent(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent, bool bIsMouseUp)
 {
   if (!_Browser)
+  {
+    UE_LOG(LogNEONWidget, Error, TEXT("[CLICK DEBUG] HandleMouseButtonEvent - Browser is NULL!"));
     return;
+  }
+
   CefMouseEvent cefEvent = GetCefMouseEvent(MyGeometry, MouseEvent);
   CefBrowserHost::MouseButtonType buttonType;
+  FString buttonName;
 
   if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
   {
     buttonType = MBT_LEFT;
+    buttonName = TEXT("LEFT");
   }
   else if (MouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
   {
     buttonType = MBT_RIGHT;
+    buttonName = TEXT("RIGHT");
   }
   else if (MouseEvent.GetEffectingButton() == EKeys::MiddleMouseButton)
   {
     buttonType = MBT_MIDDLE;
+    buttonName = TEXT("MIDDLE");
   }
   else
   {
+    UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] HandleMouseButtonEvent - Unknown button type, ignoring"));
     return;
   }
+
+  UE_LOG(LogNEONWidget, Warning, TEXT("[CLICK DEBUG] → Sending to CEF: %s %s at (%d, %d)"),
+         *buttonName,
+         bIsMouseUp ? TEXT("UP") : TEXT("DOWN"),
+         cefEvent.x,
+         cefEvent.y);
 
   _Browser->GetHost()->SendMouseClickEvent(cefEvent, buttonType, bIsMouseUp, 1);
 }
