@@ -1,0 +1,171 @@
+// NEON UE Web - Browser-ready JavaScript version
+// Compiled from TypeScript for direct browser use
+
+// Define the NEON API
+var NEON = (function() {
+  var api = {};
+
+  api.invokeUnrealEvent = function(delegate, data) {
+    data = data || {};
+    return NEON_Bridge_Unreal.invokeUnrealEvent(delegate, data);
+  };
+
+  api.invokeUnreal = api.invokeUnrealEvent;
+
+  api.invokeUnrealFunction = function(delegate, data) {
+    data = data || {};
+    return NEON_Bridge_Unreal.invokeUnrealFunction(delegate, data);
+  };
+
+  api.onInvoke = function(delegate, callback) {
+    NEON_Bridge_Web.registerCallback(delegate, callback);
+  };
+
+  api.invoke = function(delegate, data) {
+    NEON_Bridge_Web.invoke(delegate, data);
+  };
+
+  api.setVerbose = function(verbose) {
+    Log.setVerbose(verbose);
+  };
+
+  return api;
+})();
+
+// Logging utility
+var Log = (function() {
+  var verbose = false;
+
+  return {
+    setVerbose: function(v) {
+      verbose = v;
+    },
+    info: function() {
+      if (!verbose) return;
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift('[NEON]');
+      console.log.apply(console, args);
+    },
+    error: function() {
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift('[NEON]');
+      console.error.apply(console, args);
+    }
+  };
+})();
+
+// NEON Bridge Web - Handles callbacks from Unreal
+var NEON_Bridge_Web = (function() {
+  var callbacks = {};
+
+  return {
+    registerCallback: function(id, callback) {
+      Log.info('Registering NEON callback', id);
+      callbacks[id] = callback;
+    },
+    invoke: function(id, dataRaw) {
+      dataRaw = dataRaw || '{}';
+      var data;
+      try {
+        data = JSON.parse(dataRaw);
+      } catch (e) {
+        Log.error('Invoke NEON web callback failed: data is not JSON parseable: ', dataRaw);
+        return;
+      }
+      if (!callbacks[id]) {
+        Log.error('Invoke NEON web callback failed: callback not found: ' + id);
+        return;
+      }
+      Log.info('Invoke NEON web callback', id, data);
+      callbacks[id](data);
+    }
+  };
+})();
+
+// NEON Bridge Unreal - Handles calls to Unreal
+var NEON_Bridge_Unreal = (function() {
+  return {
+    invokeUnreal: function(delegate, data) {
+      return NEON_Bridge_Unreal.invokeUnrealEvent(delegate, data);
+    },
+
+    invokeUnrealFunction: function(delegate, data) {
+      if (!delegate) {
+        Log.error('NEON.invokeUnrealFunction failed: delegate is required');
+        return Promise.reject({ errorCode: 101, errorMessage: 'Delegate is required' });
+      }
+
+      delegate = 'Invoke_' + delegate;
+      Log.info('NEON.invokeUnrealFunction', delegate, data);
+
+      return new Promise(function(resolve, reject) {
+        if (!window.cefQuery) {
+          Log.error('NEON.invokeUnrealFunction failed: cefQuery is not defined');
+          return reject({ errorCode: 103, errorMessage: 'cefQuery is not defined' });
+        }
+        window.cefQuery({
+          request: JSON.stringify({
+            type: 'function',
+            delegate: delegate,
+            parameters: data
+          }),
+          onSuccess: function(response) {
+            Log.info('NEON.invokeUnrealFunction[' + delegate + '] succeeded: ' + response);
+            try {
+              var result = JSON.parse(response);
+              resolve(result);
+            } catch (e) {
+              Log.error('NEON.invokeUnrealFunction[' + delegate + '] failed to parse response: ' + response);
+              reject({ errorCode: 102, errorMessage: 'Failed to parse response' });
+            }
+          },
+          onFailure: function(errorCode, errorMessage) {
+            Log.error('NEON.invokeUnrealFunction[' + delegate + '] failed: ' + errorCode + ' - ' + errorMessage);
+            reject({ errorCode: errorCode, errorMessage: errorMessage });
+          }
+        });
+      });
+    },
+
+    invokeUnrealEvent: function(delegate, data) {
+      data = data || {};
+      if (!delegate) {
+        Log.error('NEON.invokeUnrealFunction failed: delegate is required');
+        return Promise.reject({ errorCode: 101, errorMessage: 'Delegate is required' });
+      }
+
+      delegate = 'OnInvoke_' + delegate;
+      Log.info('NEON.invokeUnrealEvent', delegate, data);
+
+      return new Promise(function(resolve, reject) {
+        if (!window.cefQuery) {
+          Log.error('NEON.invokeUnrealFunction failed: cefQuery is not defined');
+          return reject({ errorCode: 103, errorMessage: 'cefQuery is not defined' });
+        }
+        window.cefQuery({
+          request: JSON.stringify({
+            type: 'event',
+            delegate: delegate,
+            parameters: data
+          }),
+          onSuccess: function(response) {
+            Log.info('NEON.invokeUnrealEvent[' + delegate + '] succeeded.');
+            resolve(null);
+          },
+          onFailure: function(errorCode, errorMessage) {
+            Log.error('NEON.invokeUnrealEvent[' + delegate + '] failed: ' + errorCode + ' - ' + errorMessage);
+            reject({ errorCode: errorCode, errorMessage: errorMessage });
+          }
+        });
+      });
+    }
+  };
+})();
+
+// Define the NEON Bridge to be called from Unreal
+window.NEON_Bridge_Web_Invoke = NEON.invoke;
+
+// Log that NEON is loaded
+console.log('[NEON] Library loaded and attached to window');
+console.log('[NEON] NEON API available:', typeof NEON !== 'undefined');
+console.log('[NEON] window.NEON_Bridge_Web_Invoke available:', typeof window.NEON_Bridge_Web_Invoke !== 'undefined');

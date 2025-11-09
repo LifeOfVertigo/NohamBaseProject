@@ -8,6 +8,18 @@ import { Separator } from '@/Components/shadcn/separator';
 // Import Tailwind CSS - Vite will process it
 import '../Styles/globals.css';
 
+// NEON is loaded globally via inlined <script> tag in index.html
+// TypeScript type declaration only - NOT imported as module
+declare global {
+  interface Window {
+    NEON: any;
+    NEON_Bridge_Web_Invoke: (id: string, data: string) => void;
+  }
+}
+
+// Use window.NEON to ensure we're using the global, not importing a module
+const NEON = window.NEON;
+
 // NEON Bridge TypeScript definitions
 declare global {
   interface Window {
@@ -37,6 +49,8 @@ function MainMenu() {
   const [isVisible, setIsVisible] = useState(false);
   const [inputMode, setInputMode] = useState<'keyboard' | 'gamepad'>('keyboard');
   const [hasSaveData, setHasSaveData] = useState(false);
+  const [menuText, setMenuText] = useState('');
+  const [neonReady, setNeonReady] = useState(false);
 
   // Check for save data (mock implementation - replace with actual UE5 check)
   useEffect(() => {
@@ -50,19 +64,56 @@ function MainMenu() {
     setIsVisible(true);
   }, []);
 
-  // NEON Bridge helper function
-  const callUE5Function = useCallback((functionName: string, ...args: any[]) => {
-    if (window.ue?.interface) {
-      const func = (window.ue.interface as any)[functionName];
-      if (typeof func === 'function') {
-        func(...args);
-        console.log(`[NEON] Called UE5 function: ${functionName}`, args);
-      } else {
-        console.warn(`[NEON] Function not bound: ${functionName}`);
+  // Register NEON callback for Blueprint → Web communication
+  useEffect(() => {
+    console.log('[NEON] Registering UpdateMenuText callback...');
+    console.log('[NEON] NEON object available:', typeof NEON !== 'undefined');
+    console.log('[NEON] window.NEON_Bridge_Web_Invoke available:', typeof window.NEON_Bridge_Web_Invoke);
+
+    try {
+      // Enable verbose logging
+      if (NEON && NEON.setVerbose) {
+        NEON.setVerbose(true);
+        console.log('[NEON] ✅ Verbose mode enabled');
       }
-    } else {
-      console.warn('[NEON] UE5 interface not available');
+
+      NEON.onInvoke('UpdateMenuText', (data: any) => {
+        console.log('[NEON] ✅ CALLBACK TRIGGERED! Received from Blueprint:', data);
+        alert('NEON CALLBACK TRIGGERED! Data: ' + JSON.stringify(data)); // Visual confirmation
+        if (data.text) {
+          setMenuText(data.text);
+          console.log('[NEON] Menu text updated to:', data.text);
+        }
+      });
+      console.log('[NEON] ✅ UpdateMenuText callback registered successfully');
+      setNeonReady(true);
+    } catch (error) {
+      console.error('[NEON] ❌ Failed to register callback:', error);
     }
+  }, []);
+
+  // NEON Bridge helper function - calls Blueprint events via NEON
+  const callUE5Function = useCallback((functionName: string, ...args: any[]) => {
+    console.log(`[NEON] Calling UE5 event: ${functionName}`, args);
+
+    // Convert args array to data object
+    const data: any = {};
+    if (args.length === 1 && typeof args[0] === 'object') {
+      // If single object argument, use it directly
+      Object.assign(data, args[0]);
+    } else if (args.length > 0) {
+      // If multiple args, create message field
+      data.message = args.join(' ');
+    }
+
+    // Use NEON's proper event API
+    NEON.invokeUnrealEvent(functionName, data)
+      .then(() => {
+        console.log(`[NEON] Successfully called: ${functionName}`);
+      })
+      .catch((error: any) => {
+        console.error(`[NEON] Failed to call ${functionName}:`, error);
+      });
   }, []);
 
   // Menu items configuration
@@ -296,6 +347,28 @@ function MainMenu() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-8 overflow-hidden">
+      {/* NEON Debug Status (top-left) */}
+      <div className="fixed top-4 left-4 z-50 bg-slate-900/90 backdrop-blur-sm border border-slate-600/50 text-white px-3 py-2 rounded-lg shadow-lg text-xs">
+        <div className="font-bold mb-1">NEON Debug</div>
+        <div className={neonReady ? 'text-green-400' : 'text-red-400'}>
+          {neonReady ? '✅ Ready' : '❌ Not Ready'}
+        </div>
+        <div className="text-slate-400 mt-1">Waiting for Blueprint...</div>
+      </div>
+
+      {/* Blueprint Test Message Overlay (top-right) */}
+      {menuText && (
+        <motion.div
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 100 }}
+          className="fixed top-4 right-4 z-50 bg-purple-900/90 backdrop-blur-sm border border-purple-500/50 text-white px-4 py-2 rounded-lg shadow-lg"
+        >
+          <div className="text-xs text-purple-300 mb-1">Blueprint Message:</div>
+          <div className="font-semibold">{menuText}</div>
+        </motion.div>
+      )}
+
       {/* Animated background particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (

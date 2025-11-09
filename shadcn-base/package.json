@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:ue": "npm run build && npm run copy:ue",
-    "copy:ue": "cp -r dist/* ../Noham_Base_Proj_Cpp/NEON/MainMenu/dist/",
+    "build:ue": "npm run build && npm run copy:all && npm run fix:html",
+    "copy:all": "npm run copy:content && npm run copy:neon-root",
+    "copy:content": "cp -r dist/* ../Noham_Base_Proj_Cpp/Content/UI/NEON/MainMenu/dist/ && cp ../neon-ue-web-main/neon-browser.js ../Noham_Base_Proj_Cpp/Content/UI/NEON/MainMenu/dist/neon.js",
+    "copy:neon-root": "cp -r dist/* ../Noham_Base_Proj_Cpp/NEON/MainMenu/dist/ && cp ../neon-ue-web-main/neon-browser.js ../Noham_Base_Proj_Cpp/NEON/MainMenu/dist/neon.js",
+    "fix:html": "sed -i 's|/src/neon.js|./neon.js|g' ../Noham_Base_Proj_Cpp/Content/UI/NEON/MainMenu/dist/index.html && sed -i 's|/src/neon.js|./neon.js|g' ../Noham_Base_Proj_Cpp/NEON/MainMenu/dist/index.html",
     "watch:ue": "vite build --watch",
     "lint": "eslint .",
     "preview": "vite preview"

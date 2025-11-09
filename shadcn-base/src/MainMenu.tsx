@@ -15,6 +15,42 @@ interface MenuItem {
 function MainMenu() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { navigate } = useNavigation();
+  const [menuText, setMenuText] = useState('');
+  const [neonReady, setNeonReady] = useState(false);
+
+  // Register NEON callback for Blueprint → Web communication
+  useEffect(() => {
+    console.log('[NEON] Registering UpdateMenuText callback...');
+    console.log('[NEON] NEON object available:', typeof (window as any).NEON !== 'undefined');
+
+    const NEON = (window as any).NEON;
+
+    if (!NEON) {
+      console.error('[NEON] NEON not available on window!');
+      return;
+    }
+
+    try {
+      // Enable verbose logging
+      if (NEON.setVerbose) {
+        NEON.setVerbose(true);
+        console.log('[NEON] ✅ Verbose mode enabled');
+      }
+
+      NEON.onInvoke('UpdateMenuText', (data: any) => {
+        console.log('[NEON] ✅ CALLBACK TRIGGERED! Received from Blueprint:', data);
+        alert('NEON CALLBACK TRIGGERED! Data: ' + JSON.stringify(data));
+        if (data.text) {
+          setMenuText(data.text);
+          console.log('[NEON] Menu text updated to:', data.text);
+        }
+      });
+      console.log('[NEON] ✅ UpdateMenuText callback registered successfully');
+      setNeonReady(true);
+    } catch (error) {
+      console.error('[NEON] ❌ Failed to register callback:', error);
+    }
+  }, []);
 
   // NEON Bridge helper function - ONLY for actual UE5 communication
   const callUE5Event = useCallback((eventName: string, params: any = {}) => {
@@ -208,6 +244,23 @@ function MainMenu() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center pt-32 p-8 gap-16">
+      {/* NEON Debug Status (top-left) */}
+      <div className="fixed top-4 left-4 z-50 bg-slate-900/90 backdrop-blur-sm border border-slate-600/50 text-white px-3 py-2 rounded-lg shadow-lg text-xs">
+        <div className="font-bold mb-1">NEON Debug</div>
+        <div className={neonReady ? 'text-green-400' : 'text-red-400'}>
+          {neonReady ? '✅ Ready' : '❌ Not Ready'}
+        </div>
+        <div className="text-slate-400 mt-1">Waiting for Blueprint...</div>
+      </div>
+
+      {/* Blueprint Test Message Overlay (top-right) */}
+      {menuText && (
+        <div className="fixed top-4 right-4 z-50 bg-purple-900/90 backdrop-blur-sm border border-purple-500/50 text-white px-4 py-2 rounded-lg shadow-lg">
+          <div className="text-xs text-purple-300 mb-1">Blueprint Message:</div>
+          <div className="font-semibold">{menuText}</div>
+        </div>
+      )}
+
       {/* Title - separated from card */}
       <h1 className="text-8xl font-bold text-foreground">
         Noham Base Project
