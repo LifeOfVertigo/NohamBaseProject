@@ -3,8 +3,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // NEON TypeScript declarations
 declare const NEON: {
   invokeUnrealEvent(eventName: string, params: object): void;
-  invokeUnrealFunction(functionName: string, params: any[]): Promise<any>;
 };
+
+// Extend Window interface for UE5 event callbacks
+declare global {
+  interface Window {
+    InitializeSettings?: (settingsJSON: any) => void;
+    SettingsReset?: (settingsJSON: any) => void;
+  }
+}
 
 interface AudioSettings {
   masterVolume: number;
@@ -15,13 +22,25 @@ interface AudioSettings {
 }
 
 interface GraphicsSettings {
-  // Add graphics settings when implemented
-  [key: string]: any;
+  resolution?: { x: number; y: number };
+  windowMode?: number;
+  vSyncEnabled?: boolean;
+  frameRateLimit?: number;
+  qualityPreset?: number;
 }
 
 interface InputSettings {
-  // Add input settings when implemented
-  [key: string]: any;
+  mouseSensitivityX?: number;
+  mouseSensitivityY?: number;
+  adsSensitivityMultiplier?: number;
+  invertMouseY?: boolean;
+  gamepadSensitivityX?: number;
+  gamepadSensitivityY?: number;
+  invertGamepadY?: boolean;
+  leftStickDeadZone?: number;
+  rightStickDeadZone?: number;
+  enableVibration?: boolean;
+  vibrationIntensity?: number;
 }
 
 interface SettingsContextType {
@@ -31,9 +50,8 @@ interface SettingsContextType {
   setAudioSettings: (settings: AudioSettings) => void;
   setGraphicsSettings: (settings: GraphicsSettings) => void;
   setInputSettings: (settings: InputSettings) => void;
-  applyAllSettings: () => Promise<void>;
-  revertSettings: () => Promise<void>;
-  resetToDefaults: () => Promise<void>;
+  applyAllSettings: () => void;
+  resetToDefaults: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -50,90 +68,101 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [graphicsSettings, setGraphicsSettings] = useState<GraphicsSettings>({});
   const [inputSettings, setInputSettings] = useState<InputSettings>({});
 
-  // Load initial settings from UE5
+  // Notify UE5 when Settings page opens and listen for responses
   useEffect(() => {
-    const loadSettings = async () => {
-      if (typeof NEON !== 'undefined' && NEON.invokeUnrealFunction) {
-        try {
-          // Load audio settings
-          const audioResult = await NEON.invokeUnrealFunction('GetAudioSettings', []);
-          console.log('[Settings Context] Loaded audio settings from UE5:', audioResult);
+    // STEP 1: Tell UE5 that Settings page has been opened
+    if (typeof NEON !== 'undefined' && NEON.invokeUnrealEvent) {
+      NEON.invokeUnrealEvent('SettingsPageOpened', {});
+      console.log('[Settings Context] Notified UE5 that Settings page opened');
+    }
 
-          if (audioResult) {
-            setAudioSettings({
-              masterVolume: audioResult.masterVolume ?? 1.0,
-              musicVolume: audioResult.musicVolume ?? 0.8,
-              sfxVolume: audioResult.sfxVolume ?? 1.0,
-              voiceVolume: audioResult.voiceVolume ?? 1.0,
-              selectedAudioDeviceId: audioResult.selectedAudioDeviceId || 'default',
-            });
-          }
+    // STEP 2: Set up event listener - UE5 will call this with settings data
+    window.InitializeSettings = (settingsJSON: any) => {
+      console.log('[Settings Context] Received InitializeSettings from UE5:', settingsJSON);
 
-          // TODO: Load graphics and input settings when implemented
-        } catch (error) {
-          console.error('[Settings Context] Failed to load settings from UE5:', error);
-        }
-      } else {
-        console.warn('[Settings Context] NEON API not available');
+      // Convert UE5 PascalCase to Web camelCase and update state
+      if (settingsJSON.audio) {
+        setAudioSettings({
+          masterVolume: settingsJSON.audio.MasterVolume ?? 1.0,
+          musicVolume: settingsJSON.audio.MusicVolume ?? 0.8,
+          sfxVolume: settingsJSON.audio.SFXVolume ?? 1.0,
+          voiceVolume: settingsJSON.audio.VoiceVolume ?? 1.0,
+          selectedAudioDeviceId: settingsJSON.audio.SelectedAudioDeviceId || 'default',
+        });
+      }
+
+      if (settingsJSON.graphics) {
+        const g = settingsJSON.graphics;
+        setGraphicsSettings({
+          resolution: g.Resolution ? { x: g.Resolution.X, y: g.Resolution.Y } : undefined,
+          windowMode: g.WindowMode,
+          vSyncEnabled: g.bVSyncEnabled,
+          frameRateLimit: g.FrameRateLimit,
+          qualityPreset: g.QualityPreset,
+        });
+      }
+
+      if (settingsJSON.input) {
+        const i = settingsJSON.input;
+        setInputSettings({
+          mouseSensitivityX: i.MouseSensitivityX,
+          mouseSensitivityY: i.MouseSensitivityY,
+          adsSensitivityMultiplier: i.ADSSensitivityMultiplier,
+          invertMouseY: i.bInvertMouseY,
+          gamepadSensitivityX: i.GamepadSensitivityX,
+          gamepadSensitivityY: i.GamepadSensitivityY,
+          invertGamepadY: i.bInvertGamepadY,
+          leftStickDeadZone: i.LeftStickDeadZone,
+          rightStickDeadZone: i.RightStickDeadZone,
+          enableVibration: i.bEnableVibration,
+          vibrationIntensity: i.VibrationIntensity,
+        });
       }
     };
 
-    loadSettings();
+    // Reset to defaults event listener - UE5 will call this after resetting
+    window.SettingsReset = (settingsJSON: any) => {
+      console.log('[Settings Context] Received SettingsReset from UE5:', settingsJSON);
+
+      // Reuse the same initialization logic
+      if (window.InitializeSettings) {
+        window.InitializeSettings(settingsJSON);
+      }
+    };
+
+    // Cleanup event listeners on unmount
+    return () => {
+      delete window.InitializeSettings;
+      delete window.SettingsReset;
+    };
   }, []);
 
-  const applyAllSettings = async () => {
+  const applyAllSettings = () => {
     if (typeof NEON !== 'undefined' && NEON.invokeUnrealEvent) {
-      try {
-        // Send all settings to UE5
-        NEON.invokeUnrealEvent('ApplySettings', {
-          audio: audioSettings,
-          graphics: graphicsSettings,
-          input: inputSettings,
-        });
-        console.log('[Settings Context] Applied settings:', {
-          audio: audioSettings,
-          graphics: graphicsSettings,
-          input: inputSettings,
-        });
-      } catch (error) {
-        console.error('[Settings Context] Failed to apply settings:', error);
-        throw error;
-      }
+      // Send all settings to UE5 for saving
+      NEON.invokeUnrealEvent('ApplySettings', {
+        audio: audioSettings,
+        graphics: graphicsSettings,
+        input: inputSettings,
+      });
+      console.log('[Settings Context] Applied settings to UE5:', {
+        audio: audioSettings,
+        graphics: graphicsSettings,
+        input: inputSettings,
+      });
     } else {
-      console.warn('[Settings Context] NEON API not available');
-      throw new Error('NEON API not available');
+      console.warn('[Settings Context] NEON API not available - settings not applied');
     }
   };
 
-  const revertSettings = async () => {
+  const resetToDefaults = () => {
     if (typeof NEON !== 'undefined' && NEON.invokeUnrealEvent) {
-      try {
-        NEON.invokeUnrealEvent('RevertSettings', {});
-        console.log('[Settings Context] Reverted settings');
-        // Reload settings from UE5 after revert
-        window.location.reload();
-      } catch (error) {
-        console.error('[Settings Context] Failed to revert settings:', error);
-        throw error;
-      }
+      // Request UE5 to reset and send back default values
+      NEON.invokeUnrealEvent('ResetToDefaults', {});
+      console.log('[Settings Context] Requested reset to defaults from UE5');
+      // UE5 will call window.SettingsReset with default values
     } else {
-      throw new Error('NEON API not available');
-    }
-  };
-
-  const resetToDefaults = async () => {
-    if (typeof NEON !== 'undefined' && NEON.invokeUnrealEvent) {
-      try {
-        NEON.invokeUnrealEvent('ResetToDefaults', {});
-        console.log('[Settings Context] Reset to defaults');
-        // Reload settings from UE5 after reset
-        window.location.reload();
-      } catch (error) {
-        console.error('[Settings Context] Failed to reset settings:', error);
-        throw error;
-      }
-    } else {
-      throw new Error('NEON API not available');
+      console.warn('[Settings Context] NEON API not available - cannot reset');
     }
   };
 
@@ -147,7 +176,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setGraphicsSettings,
         setInputSettings,
         applyAllSettings,
-        revertSettings,
         resetToDefaults,
       }}
     >

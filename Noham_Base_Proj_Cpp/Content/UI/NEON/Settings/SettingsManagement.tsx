@@ -5,77 +5,43 @@ import { Separator } from '@/Components/shadcn/separator';
 import { useSettings } from './SettingsContext';
 
 const SettingsManagement: React.FC = () => {
-  const { applyAllSettings, revertSettings, resetToDefaults } = useSettings();
-  const [isApplying, setIsApplying] = React.useState(false);
+  const { applyAllSettings, resetToDefaults } = useSettings();
 
-  const handleApplySettings = async () => {
-    setIsApplying(true);
-    try {
-      await applyAllSettings();
-      alert('Settings applied successfully!');
-    } catch (error) {
-      console.error('[Settings Management] Apply failed:', error);
-      alert('Failed to apply settings. Check console for details.');
-    } finally {
-      setIsApplying(false);
-    }
+  const handleApplySettings = () => {
+    applyAllSettings();
+    // Note: Settings are sent to UE5 immediately, no async needed
+    console.log('[Settings Management] Settings applied');
   };
 
-  const handleRevertSettings = async () => {
-    if (confirm('Revert to previous settings? This will undo recent changes.')) {
-      try {
-        await revertSettings();
-        alert('Settings reverted successfully.');
-      } catch (error) {
-        console.error('[Settings Management] Revert failed:', error);
-        alert('Failed to revert settings.');
-      }
-    }
-  };
-
-  const handleResetDefaults = async () => {
-    if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-      try {
-        await resetToDefaults();
-        alert('Settings reset to defaults.');
-      } catch (error) {
-        console.error('[Settings Management] Reset failed:', error);
-        alert('Failed to reset settings.');
-      }
+  const handleResetDefaults = () => {
+    if (confirm('Reset all settings to defaults? You will still need to click Apply to save them.')) {
+      resetToDefaults();
+      // UE5 will call window.SettingsReset with default values
+      console.log('[Settings Management] Reset to defaults requested');
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Apply/Revert Controls */}
+      {/* Apply Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Apply & Revert</CardTitle>
+          <CardTitle>Apply Settings</CardTitle>
           <CardDescription>
-            Apply or revert your settings changes
+            Save your settings changes to disk
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <Button
-              onClick={handleApplySettings}
-              className="flex-1"
-              disabled={isApplying}
-            >
-              {isApplying ? 'Applying...' : 'Apply All Settings'}
-            </Button>
-            <Button
-              onClick={handleRevertSettings}
-              variant="outline"
-              className="flex-1"
-              disabled={isApplying}
-            >
-              Revert to Previous
-            </Button>
-          </div>
+          <Button
+            onClick={handleApplySettings}
+            className="w-full"
+            size="lg"
+          >
+            Apply All Settings
+          </Button>
           <p className="text-sm text-muted-foreground">
-            Apply button saves all audio, graphics, and input settings to Unreal Engine.
-            Revert restores the last applied settings.
+            Click Apply to save all audio, graphics, and input settings to Unreal Engine.
+            Changes are not saved until you click this button. Close the menu without applying to discard changes.
           </p>
         </CardContent>
       </Card>
@@ -85,7 +51,7 @@ const SettingsManagement: React.FC = () => {
       {/* Reset to Defaults */}
       <Card>
         <CardHeader>
-          <CardTitle>Reset Settings</CardTitle>
+          <CardTitle>Reset to Defaults</CardTitle>
           <CardDescription>
             Restore all settings to their default values
           </CardDescription>
@@ -95,7 +61,8 @@ const SettingsManagement: React.FC = () => {
             Reset All Settings to Defaults
           </Button>
           <p className="text-sm text-muted-foreground mt-4">
-            This will reset all graphics, audio, and input settings to their default values. This action cannot be undone.
+            This will load default values for all graphics, audio, and input settings.
+            You must still click "Apply" to save the defaults.
           </p>
         </CardContent>
       </Card>
